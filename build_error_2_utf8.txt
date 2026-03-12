@@ -1,0 +1,47 @@
+﻿
+> soulpages@0.1.0 build
+> next build
+
+   Γû▓ Next.js 14.1.0
+   - Environments: .env.local
+
+   Linting and checking validity of types ...
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully
+   Collecting page data ...
+   Generating static pages (0/16) ...
+
+   Generating static pages (4/16) 
+
+   Generating static pages (8/16) 
+
+   Generating static pages (12/16) 
+
+ Γ£ô Generating static pages (16/16) 
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (pages)                             Size     First Load JS
+Γöî Γùï /                                     2.21 kB         119 kB
+Γö£   /_app                                 0 B            78.2 kB
+Γö£ Γùï /404                                  181 B          78.3 kB
+Γö£ Γùï /achievements                         2.16 kB         126 kB
+Γö£ Γùï /analytics                            69.9 kB         194 kB
+Γö£ Γùï /auth                                 3.6 kB          118 kB
+Γö£ Γùï /coach                                3.44 kB         133 kB
+Γö£ Γùï /dashboard                            4.02 kB         128 kB
+Γö£ Γùï /diary                                5.23 kB         135 kB
+Γö£ Γùï /goals                                9.06 kB         139 kB
+Γö£ Γùï /habits                               2.84 kB         127 kB
+Γö£ Γùï /memories                             12.3 kB         136 kB
+Γö£ Γùï /mistakes                             4.15 kB         134 kB
+Γö£ Γùï /mood (315 ms)                        2.03 kB         126 kB
+Γö£ Γùï /todo                                 3.29 kB         127 kB
+Γöö Γùï /vault                                3.75 kB         127 kB
++ First Load JS shared by all             87.5 kB
+  Γö£ chunks/framework-03cd576e71e4cd66.js  45.2 kB
+  Γö£ chunks/main-930135e47dff83e9.js       31.8 kB
+  Γöö other shared chunks (total)           10.6 kB
+
+Γùï  (Static)  prerendered as static content
+
