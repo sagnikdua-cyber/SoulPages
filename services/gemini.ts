@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 export const geminiService = {
   async analyzeDiaryEntry(text: string) {
     if (!API_KEY) throw new Error("Gemini API Key missing");
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `Analyze this diary entry and return a JSON object with: 
     "mood" (one of: happy, sad, neutral, anxious, excited, tired, angry), 
     "summary" (max 20 words), 
@@ -19,14 +19,14 @@ export const geminiService = {
       const jsonStr = response.text().replace(/```json|```/g, "").trim();
       return JSON.parse(jsonStr);
     } catch (error) {
-      console.error("Gemini analysis failed:", error);
+      console.error("Gemini analysis failed. Check API Key or Model access:", error);
       return { mood: "neutral", summary: "Reflective entry.", emotionalScore: 50 };
     }
   },
 
   async generateGoalPlan(goal: string) {
     if (!API_KEY) throw new Error("Gemini API Key missing");
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `Create a 5-step action plan and a motivation message for this goal: "${goal}". 
     Return as Markdown format.`;
     
@@ -35,13 +35,14 @@ export const geminiService = {
       const response = await result.response;
       return response.text();
     } catch (error) {
+      console.error("Gemini goal plan generation failed:", error);
       return "Unable to generate plan. You've got this!";
     }
   },
 
   async getMistakeAdvice(mistake: string, lesson: string) {
     if (!API_KEY) throw new Error("Gemini API Key missing");
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `I made this mistake: "${mistake}". I learned this lesson: "${lesson}". 
     Provide one paragraph of reflective, supportive advice.`;
     
@@ -50,13 +51,14 @@ export const geminiService = {
       const response = await result.response;
       return response.text();
     } catch (error) {
+      console.error("Gemini mistake advice failed:", error);
       return "Mistakes are our greatest teachers. Keep growing.";
     }
   },
 
   async askLifeCoach(query: string, context?: string) {
     if (!API_KEY) throw new Error("Gemini API Key missing");
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `Context (previous habits/moods): ${context || "New user"}. 
     User Question: "${query}". 
     Respond as a compassionate AI Life Coach.`;

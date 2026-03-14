@@ -83,3 +83,12 @@ export interface Achievement {
   badgeId: string;
   unlockedAt: number;
 }
+
+export interface Streak {
+  id: string;
+  userId: string;
+  name: string;
+  targetDays: number;
+  startDate: string; // YYYY-MM-DD
+  completedDates: string[]; // Array of YYYY-MM-DD when "I did it" was clicked
+}

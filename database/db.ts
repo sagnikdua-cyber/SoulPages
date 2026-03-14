@@ -1,7 +1,7 @@
 import { openDB, IDBPDatabase } from 'idb';
 
 const DATABASE_NAME = 'soulpages_db';
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
 export async function initDB() {
   return openDB(DATABASE_NAME, DATABASE_VERSION, {
@@ -34,6 +34,9 @@ export async function initDB() {
       }
       if (!db.objectStoreNames.contains('achievements')) {
         db.createObjectStore('achievements', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('streaks')) {
+        db.createObjectStore('streaks', { keyPath: 'id' });
       }
     },
   });

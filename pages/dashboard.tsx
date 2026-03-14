@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import ModuleCard from '@/components/ModuleCard';
 import AchievementsSystem from '@/components/Achievements';
 import Link from 'next/link';
+import { dbService } from '@/database/db';
+import { Streak } from '@/types';
 import { 
   Book, 
   Target, 
@@ -12,11 +15,96 @@ import {
   Sparkles,
   Flame,
   Smile,
-  BarChart3
+  BarChart3,
+  Plus,
+  CheckCircle2,
+  Calendar as CalendarIcon,
+  ChevronDown
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Dashboard() {
+  const [streaks, setStreaks] = useState<Streak[]>([]);
+  const [selectedStreakId, setSelectedStreakId] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newStreakName, setNewStreakName] = useState('');
+  const [newStreakDays, setNewStreakDays] = useState('30');
+
+  useEffect(() => {
+    fetchStreaks();
+  }, []);
+
+  const fetchStreaks = async () => {
+    const userId = localStorage.getItem('soulpages_user_id');
+    const all = await dbService.getAll<Streak>('streaks');
+    const userStreaks = all.filter(s => s.userId === userId);
+    setStreaks(userStreaks);
+    if (userStreaks.length > 0 && !selectedStreakId) {
+      setSelectedStreakId(userStreaks[0].id);
+    }
+  };
+
+  const handleCreateStreak = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const userId = localStorage.getItem('soulpages_user_id');
+    if (!userId) return;
+
+    const newStreak: Streak = {
+      id: Math.random().toString(36).substring(2, 9),
+      userId,
+      name: newStreakName,
+      targetDays: parseInt(newStreakDays),
+      startDate: new Date().toISOString().split('T')[0],
+      completedDates: []
+    };
+
+    await dbService.add('streaks', newStreak);
+    setNewStreakName('');
+    setShowAddModal(false);
+    await fetchStreaks();
+    setSelectedStreakId(newStreak.id);
+  };
+
+  const handleIDidIt = async () => {
+    const current = streaks.find(s => s.id === selectedStreakId);
+    if (!current) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    if (current.completedDates.includes(today)) return;
+
+    const updated = {
+      ...current,
+      completedDates: [...current.completedDates, today]
+    };
+
+    await dbService.put('streaks', updated);
+    await fetchStreaks();
+  };
+
+  const selectedStreak = streaks.find(s => s.id === selectedStreakId);
+
+  const calculateDates = (streak: Streak) => {
+    const start = new Date(streak.startDate);
+    const end = new Date(start);
+    end.setDate(start.getDate() + streak.targetDays - 1);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startCopy = new Date(start);
+    startCopy.setHours(0, 0, 0, 0);
+
+    const diffInTime = today.getTime() - startCopy.getTime();
+    const currentDay = Math.floor(diffInTime / (1000 * 3600 * 24)) + 1;
+    const daysLeft = Math.max(0, streak.targetDays - currentDay + 1);
+
+    return {
+      start: start.toLocaleDateString(),
+      end: end.toLocaleDateString(),
+      currentDay,
+      daysLeft
+    };
+  };
+
   const modules = [
     { title: 'Digital Diary', description: 'Securely store your daily reflections with AI mood analysis.', icon: Book, color: 'bg-soul-purple', href: '/diary' },
     { title: 'Goal Setting', description: 'Break down dreams into actionable AI-powered steps.', icon: Target, color: 'bg-soul-gold', href: '/goals' },
@@ -73,6 +161,104 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* My Streaks Section */}
+        <section className="space-y-10">
+          <div className="flex items-center justify-between">
+            <h2 className="text-5xl font-elegant text-white tracking-tighter">My <span className="text-soul-gold">Streaks</span></h2>
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="px-6 py-3 glass-premium rounded-2xl flex items-center gap-2 text-white font-bold hover:bg-white/10 transition-all border border-white/10"
+            >
+              <Plus className="w-5 h-5" /> New Streak
+            </button>
+          </div>
+
+          {!selectedStreak ? (
+            <div className="glass-card-premium rounded-[3rem] p-20 text-center space-y-6">
+               <Flame className="w-20 h-20 text-soul-gold/20 mx-auto" />
+               <p className="text-2xl text-slate-500 font-medium tracking-tight">Construct your first streak to start your journey.</p>
+            </div>
+          ) : (
+            <div className="glass-card-premium rounded-[3.5rem] p-10 md:p-16 space-y-12 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-soul-gold/5 blur-[120px] -z-10 group-hover:bg-soul-gold/10 transition-colors" />
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+                <div className="space-y-4">
+                  <div className="relative inline-block">
+                    <select 
+                      value={selectedStreakId || ''} 
+                      onChange={(e) => setSelectedStreakId(e.target.value)}
+                      className="appearance-none bg-white/5 border border-white/10 text-white text-3xl md:text-5xl font-elegant px-8 py-4 pr-16 rounded-[2rem] focus:outline-none focus:ring-2 ring-soul-gold/50 cursor-pointer hover:bg-white/10 transition-all drop-shadow-2xl"
+                    >
+                      {streaks.map(s => <option key={s.id} value={s.id} className="bg-soul-bg text-white">{s.name}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-soul-gold w-8 h-8 pointer-events-none" />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-6 pt-2">
+                    {(() => {
+                      const { start, end, daysLeft } = calculateDates(selectedStreak);
+                      return (
+                        <>
+                          <div className="flex items-center gap-2 text-slate-400 text-sm font-black uppercase tracking-widest">
+                            <span className="text-soul-gold">Start:</span> {start}
+                          </div>
+                          <div className="flex items-center gap-2 text-slate-400 text-sm font-black uppercase tracking-widest">
+                            <span className="text-soul-gold">End:</span> {end}
+                          </div>
+                          <div className="flex items-center gap-2 text-soul-sky text-sm font-black uppercase tracking-widest bg-soul-sky/10 px-4 py-2 rounded-full border border-soul-sky/20">
+                            {daysLeft} Days Remaining
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleIDidIt}
+                  className="px-12 py-6 bg-white text-soul-indigo rounded-full font-black text-2xl shadow-glow-gold hover:shadow-2xl transition-all flex items-center gap-4 group/btn"
+                >
+                  I Did It! <CheckCircle2 className="w-8 h-8 text-soul-gold group-hover/btn:rotate-12 transition-transform" />
+                </motion.button>
+              </div>
+
+              {/* Day Grid */}
+              <div className="grid grid-cols-5 sm:grid-cols-10 lg:grid-cols-15 xl:grid-cols-20 gap-4">
+                {Array.from({ length: selectedStreak.targetDays }).map((_, i) => {
+                  const dayNum = i + 1;
+                  const { currentDay } = calculateDates(selectedStreak);
+                  const isCurrent = dayNum === currentDay;
+                  const dateAtDay = new Date(selectedStreak.startDate);
+                  dateAtDay.setDate(dateAtDay.getDate() + i);
+                  const dateStr = dateAtDay.toISOString().split('T')[0];
+                  const isCompleted = selectedStreak.completedDates.includes(dateStr);
+                  
+                  return (
+                    <div 
+                      key={dayNum}
+                      className={`aspect-square rounded-2xl border transition-all flex flex-col items-center justify-center relative overflow-hidden group/cell ${
+                        isCurrent 
+                          ? 'bg-soul-gold/20 border-soul-gold shadow-[0_0_20px_rgba(253,224,71,0.2)] scale-110 z-10' 
+                          : isCompleted 
+                            ? 'bg-soul-purple/10 border-soul-purple/30' 
+                            : 'bg-white/5 border-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      <span className={`text-[10px] font-black tracking-tight ${isCurrent ? 'text-soul-gold' : isCompleted ? 'text-soul-purple' : 'text-slate-500'}`}>
+                        {dayNum}{dayNum === 1 ? 'st' : dayNum === 2 ? 'nd' : dayNum === 3 ? 'rd' : 'th'}
+                      </span>
+                      {isCompleted && <CheckCircle2 className="w-4 h-4 text-soul-purple mt-1 drop-shadow-glow" />}
+                      {isCurrent && <div className="absolute inset-x-0 bottom-0 h-1 bg-soul-gold animate-pulse" />}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* AI Life Coach CTA */}
         <section className="pt-8">
           <motion.div
@@ -101,6 +287,58 @@ export default function Dashboard() {
             </div>
           </motion.div>
         </section>
+
+        {/* Add Streak Modal */}
+        <AnimatePresence>
+          {showAddModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 pb-20">
+               <motion.div 
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 onClick={() => setShowAddModal(false)}
+                 className="absolute inset-0 bg-soul-bg/80 backdrop-blur-3xl"
+               />
+               <motion.div 
+                 initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                 animate={{ opacity: 1, scale: 1, y: 0 }}
+                 exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                 className="w-full max-w-xl glass-card-premium rounded-[3rem] p-10 md:p-16 border border-white/10 relative z-10 shadow-glow-purple"
+               >
+                  <h2 className="text-5xl font-elegant text-white mb-10 tracking-tighter">Manifest New <span className="text-soul-purple">Streak</span></h2>
+                  <form onSubmit={handleCreateStreak} className="space-y-8">
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-4">Streak Name</label>
+                        <input 
+                          autoFocus
+                          required
+                          placeholder="e.g. Daily Meditation"
+                          value={newStreakName}
+                          onChange={(e) => setNewStreakName(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-white text-xl focus:outline-none focus:ring-2 ring-soul-purple transition-all"
+                        />
+                     </div>
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-4">Duration (Days)</label>
+                        <input 
+                          type="number"
+                          required
+                          min="1"
+                          max="365"
+                          value={newStreakDays}
+                          onChange={(e) => setNewStreakDays(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-white text-xl focus:outline-none focus:ring-2 ring-soul-purple transition-all"
+                        />
+                     </div>
+                     <div className="flex gap-4 pt-4">
+                        <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 p-6 glass-premium text-slate-400 rounded-2xl font-bold hover:bg-white/5 transition-all">Cancel</button>
+                        <button type="submit" className="flex-[2] p-6 bg-white text-soul-indigo rounded-2xl font-black text-xl hover:scale-105 transition-all shadow-glow-gold">Create Path</button>
+                     </div>
+                  </form>
+               </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Background Systems */}
         <div className="hidden"><AchievementsSystem /></div>
