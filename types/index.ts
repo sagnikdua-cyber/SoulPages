@@ -92,3 +92,23 @@ export interface Streak {
   startDate: string; // YYYY-MM-DD
   completedDates: string[]; // Array of YYYY-MM-DD when "I did it" was clicked
 }
+export interface ProductivitySlot {
+  id: string;
+  userId: string;
+  name: string;
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  activeSecondsToday: number;
+  lastUpdated: string; // ISO string to track active time within current session
+}
+
+export interface ProductivityHistory {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  totalProductivityPercentage: number;
+  slotsDetails: {
+    name: string;
+    percentage: number;
+  }[];
+}
