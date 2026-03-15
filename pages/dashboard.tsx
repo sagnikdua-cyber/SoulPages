@@ -97,15 +97,45 @@ export default function Dashboard() {
     const currentDay = Math.floor(diffInTime / (1000 * 3600 * 24)) + 1;
     const daysLeft = Math.max(0, streak.targetDays - currentDay + 1);
 
+    // FAILURE DETECTION:
+    // Check if any day from start to yesterday was missed
+    let failed = false;
+    for (let i = 0; i < currentDay - 1; i++) {
+      const checkDate = new Date(start);
+      checkDate.setDate(start.getDate() + i);
+      const dateStr = checkDate.toISOString().split('T')[0];
+      if (!streak.completedDates.includes(dateStr)) {
+        failed = true;
+        break;
+      }
+    }
+
+    const completed = streak.completedDates.length === streak.targetDays;
+    const active = !failed && !completed && currentDay <= streak.targetDays;
+
     return {
       start: start.toLocaleDateString(),
       end: end.toLocaleDateString(),
       currentDay,
-      daysLeft
+      daysLeft,
+      failed,
+      completed,
+      active
     };
   };
 
+  const activeStreaks = streaks.filter(s => {
+    const { active } = calculateDates(s);
+    return active;
+  });
+
+  const previousStreaks = streaks.filter(s => {
+    const { active } = calculateDates(s);
+    return !active;
+  });
+
   const modules = [
+    { title: 'Pulse Tracker', description: 'Monitor your focus and productivity in real-time.', icon: Sparkles, color: 'bg-soul-sky', href: '/productivity' },
     { title: 'Digital Diary', description: 'Securely store your daily reflections with AI mood analysis.', icon: Book, color: 'bg-soul-purple', href: '/diary' },
     { title: 'Goal Setting', description: 'Break down dreams into actionable AI-powered steps.', icon: Target, color: 'bg-soul-gold', href: '/goals' },
     { title: 'Flashback Reel', description: 'Capture memories with photos and background music.', icon: Camera, color: 'bg-soul-sky', href: '/memories' },
@@ -190,24 +220,47 @@ export default function Dashboard() {
                       onChange={(e) => setSelectedStreakId(e.target.value)}
                       className="appearance-none bg-white/5 border border-white/10 text-white text-3xl md:text-5xl font-elegant px-8 py-4 pr-16 rounded-[2rem] focus:outline-none focus:ring-2 ring-soul-gold/50 cursor-pointer hover:bg-white/10 transition-all drop-shadow-2xl"
                     >
-                      {streaks.map(s => <option key={s.id} value={s.id} className="bg-soul-bg text-white">{s.name}</option>)}
+                      {activeStreaks.length > 0 && (
+                        <optgroup label="Active Paths" className="bg-soul-bg">
+                          {activeStreaks.map(s => <option key={s.id} value={s.id} className="bg-soul-bg text-white">{s.name}</option>)}
+                        </optgroup>
+                      )}
+                      {previousStreaks.length > 0 && (
+                        <optgroup label="Previous Streaks" className="bg-soul-bg">
+                          {previousStreaks.map(s => <option key={s.id} value={s.id} className="bg-soul-bg text-slate-400">{s.name} (Archived)</option>)}
+                        </optgroup>
+                      )}
                     </select>
                     <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-soul-gold w-8 h-8 pointer-events-none" />
                   </div>
                   <div className="flex flex-wrap items-center gap-6 pt-2">
                     {(() => {
-                      const { start, end, daysLeft } = calculateDates(selectedStreak);
+                      const { start, end, daysLeft, failed, completed } = calculateDates(selectedStreak);
                       return (
                         <>
+                          {failed && (
+                            <div className="w-full mb-4 px-8 py-4 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center gap-4 text-red-500 font-bold animate-pulse">
+                              <AlertCircle className="w-6 h-6" />
+                              U failed to keep consistency
+                            </div>
+                          )}
+                          {completed && (
+                            <div className="w-full mb-4 px-8 py-4 bg-green-500/10 border border-green-500/30 rounded-2xl flex items-center gap-4 text-green-500 font-bold">
+                              <CheckCircle2 className="w-6 h-6" />
+                              Congratulation, u are a consistent warrior
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 text-slate-400 text-sm font-black uppercase tracking-widest">
                             <span className="text-soul-gold">Start:</span> {start}
                           </div>
                           <div className="flex items-center gap-2 text-slate-400 text-sm font-black uppercase tracking-widest">
                             <span className="text-soul-gold">End:</span> {end}
                           </div>
-                          <div className="flex items-center gap-2 text-soul-sky text-sm font-black uppercase tracking-widest bg-soul-sky/10 px-4 py-2 rounded-full border border-soul-sky/20">
-                            {daysLeft} Days Remaining
-                          </div>
+                          {!failed && !completed && (
+                            <div className="flex items-center gap-2 text-soul-sky text-sm font-black uppercase tracking-widest bg-soul-sky/10 px-4 py-2 rounded-full border border-soul-sky/20">
+                              {daysLeft} Days Remaining
+                            </div>
+                          )}
                         </>
                       );
                     })()}
@@ -217,8 +270,13 @@ export default function Dashboard() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  disabled={calculateDates(selectedStreak).failed || calculateDates(selectedStreak).completed}
                   onClick={handleIDidIt}
-                  className="px-12 py-6 bg-white text-soul-indigo rounded-full font-black text-2xl shadow-glow-gold hover:shadow-2xl transition-all flex items-center gap-4 group/btn"
+                  className={`px-12 py-6 rounded-full font-black text-2xl shadow-glow-gold hover:shadow-2xl transition-all flex items-center gap-4 group/btn ${
+                    calculateDates(selectedStreak).failed || calculateDates(selectedStreak).completed
+                      ? 'bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
+                      : 'bg-white text-soul-indigo'
+                  }`}
                 >
                   I Did It! <CheckCircle2 className="w-8 h-8 text-soul-gold group-hover/btn:rotate-12 transition-transform" />
                 </motion.button>

@@ -1,7 +1,7 @@
 import { openDB, IDBPDatabase } from 'idb';
 
 const DATABASE_NAME = 'soulpages_db';
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 
 export async function initDB() {
   return openDB(DATABASE_NAME, DATABASE_VERSION, {
@@ -37,6 +37,12 @@ export async function initDB() {
       }
       if (!db.objectStoreNames.contains('streaks')) {
         db.createObjectStore('streaks', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('productivity_slots')) {
+        db.createObjectStore('productivity_slots', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('productivity_history')) {
+        db.createObjectStore('productivity_history', { keyPath: 'id' });
       }
     },
   });
